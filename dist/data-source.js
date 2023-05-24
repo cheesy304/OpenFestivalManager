@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.ds = exports.AppDataSource = void 0;
+exports.AppDataSource = exports.ds = exports.AppDataSourcep = void 0;
 require("reflect-metadata");
 const typeorm_1 = require("typeorm");
 // Import Model
@@ -23,7 +23,7 @@ const ProductIngredient_1 = require("./entity/ProductIngredient");
 class ds {
     static async createADS(dbhost, port, user, password, dbname) {
         try {
-            exports.AppDataSource = new typeorm_1.DataSource({
+            exports.AppDataSourcep = new typeorm_1.DataSource({
                 type: "postgres",
                 host: dbhost,
                 port: Number(port),
@@ -68,3 +68,29 @@ class ds {
     }
 }
 exports.ds = ds;
+exports.AppDataSource = new typeorm_1.DataSource({
+    type: "sqlite",
+    database: "database.sqlite",
+    synchronize: true,
+    logging: false,
+    entities: [
+        Account_1.Account,
+        Station_1.Station,
+        Alert_1.Alert,
+        AlertType_1.AlertType,
+        Table_1.Table,
+        TableGroup_1.TableGroup,
+        Category_1.Category,
+        Product_1.Product,
+        Variation_1.Variation,
+        Ingredient_1.Ingredient,
+        Bill_1.Bill,
+        Order_1.Order,
+        PaymentMethod_1.PaymentMethod,
+        Session_1.Session,
+        State_1.State,
+        ProductIngredient_1.ProductIngredient,
+    ],
+    migrations: [],
+    subscribers: [],
+});

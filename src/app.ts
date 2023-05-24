@@ -16,14 +16,14 @@ const fs = require('fs');
 var argv = require('minimist')(process.argv.slice(2));
 if (!argv.env) {
   console.log("Using default env")
-  let ret = dotenv.config({path:__dirname+'/../.env'})
+  let ret = dotenv.config({ path: __dirname + '/../.env' })
   if (ret.error) {
     console.log("Config parsing failed")
     process.exit(1)
   }
 } else {
   // Load data from .env config file
-  let ret = dotenv.config({path: argv.env})
+  let ret = dotenv.config({ path: argv.env })
   if (ret.error) {
     console.log("Config parsing failed")
     process.exit(1)
@@ -62,9 +62,9 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
 // Cache Control Header function
-let setCache = function (req: Request, res: Response, next:any) {
+let setCache = function (req: Request, res: Response, next: any) {
   // Cache for 24h
-  const period = 60 * 60 * 24 
+  const period = 60 * 60 * 24
 
   // Only cache images, js and css files
   if (req.method == 'GET' && (req.url.includes("stylesheets") || req.url.includes("images") || req.url.includes("js") || req.url.includes("bs5") || req.url.includes("media"))) {
@@ -82,18 +82,19 @@ app.use(setCache);
 
 // Use public directory as root for web files
 app.use(express.static(path.join(__dirname, 'public')));
+//app.use(express.static(path.join(__dirname, "node_modules/bootstrap/dist/")));
 
 // Session valid for 24h
 const oneDay = 1000 * 60 * 60 * 24;
 // Set session parameters
 app.use(sessions({
-    secret: uid(32), // Unique session token random generated
-    saveUninitialized:true,   
+  secret: uid(32), // Unique session token random generated
+  saveUninitialized: true,
   cookie: {
     maxAge: oneDay,
     secure: (process.env.DEVELOPMENT != "true")
   },
-    resave: false 
+  resave: false
 }));
 
 // Request Pre Routing
@@ -113,6 +114,7 @@ app.use('/station', stationRouter);
 app.use('/rest', restRouter);
 
 
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -129,7 +131,7 @@ if (!ds.createADSFromFile()) {
 
 // Start express server
 app.listen(port, () => {
-  console.log(`[server]: Server is running at https://localhost:${port}`);
+  console.log(`[server]: Server is running at http://localhost:${port}`);
   console.log("[server]: Version " + process.env.VERSION);
 });
 

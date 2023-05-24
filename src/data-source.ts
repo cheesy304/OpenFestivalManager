@@ -19,7 +19,7 @@ import { Session } from "./entity/Session";
 import { State } from "./entity/State";
 import { ProductIngredient } from "./entity/ProductIngredient";
 
-export let AppDataSource: DataSource;
+export let AppDataSourcep: DataSource;
 
 export class ds {
   static async createADS(
@@ -30,7 +30,7 @@ export class ds {
     dbname: string | undefined
   ): Promise<Boolean> {
     try {
-      AppDataSource = new DataSource({
+      AppDataSourcep = new DataSource({
         type: "postgres",
         host: dbhost,
         port: Number(port),
@@ -69,8 +69,33 @@ export class ds {
       return false;
     }
     return true;
-    }
-    static async createADSFromFile():Promise<Boolean> {
-        return ds.createADS(process.env.DB_HOST, process.env.DB_PORT, process.env.DB_USER, process.env.DB_PASSWORD, process.env.DB_SCHEMA)
-    }
+  }
+  static async createADSFromFile(): Promise<Boolean> {
+    return ds.createADS(process.env.DB_HOST, process.env.DB_PORT, process.env.DB_USER, process.env.DB_PASSWORD, process.env.DB_SCHEMA)
+  }
 }
+export const AppDataSource = new DataSource({
+  type: "sqlite",
+  database: "database.sqlite",
+  synchronize: true,
+  logging: false,
+  entities: [
+    Account,
+    Station,
+    Alert,
+    AlertType,
+    Table,
+    TableGroup,
+    Category,
+    Product,
+    Variation,
+    Ingredient,
+    Bill,
+    Order,
+    PaymentMethod,
+    Session,
+    State,
+    ProductIngredient,],
+  migrations: [],
+  subscribers: [],
+})

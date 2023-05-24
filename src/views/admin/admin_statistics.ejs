@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <title>Admin Konsole</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <script src="/javascripts/jquery-3.1.1.min.js"></script>
+    <script src="/javascripts/mdb.js"></script>
+    <script src="/javascripts/bootstrap/bootstrap.bundle.min.js"></script>
+    <link rel="stylesheet" href="/stylesheets/css/bootstrap.min.css">
+</head>
+
+<body>
+
+
+    <nav class="navbar navbar-expand-sm bg-dark navbar-dark">
+        <!-- Brand/logo -->
+        <a class="navbar-brand" href="/">Home</a>
+
+        <!-- Links -->
+        <ul class="navbar-nav">
+            <li class="nav-item">
+                <a class="nav-link" href="/admin">System</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="/admin/statistics">Statistik</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="/admin/orderdata">Bestelldaten</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="/admin/configuration">Stammdaten</a>
+            </li>
+        </ul>
+    </nav>
+    <br>
+    <div class="container">
+        <div class="card">
+            <div class="card-header">
+                Aktuelle Auslastung
+            </div>
+            <div class="card-body">
+                Offene Bestellungen: <span id="openOrders"></span>
+                <br>
+                Belegung: <span id="activeSessions"></span>/<span id="allTables"></span>
+                <br>
+                Abgeschlossene Bestellungen heute: <span id="todayOrders"></span>
+                <br>
+                Abgeschlossene Sitzungen heute: <span id="todaySessions"></span>
+            </div>
+        </div>
+        <br>
+        <div class="card">
+            <div class="card-header">
+                Benachrichtigungen
+            </div>
+            <div class="card-body" id="alerts">
+            </div>
+        </div>
+        <br>
+        <div class="card">
+            <div class="card-header">
+                Auslastung Stationen
+            </div>
+            <div class="card-body">
+                Datum:
+                <select class="form-control" id="dates" onchange="loadChart()">
+                    <% if(dates.length){%>
+                    <option value="" selected>Choose ...</option>
+                    <% for(var i=0; i< dates.length; i++) {%>
+                    <option value="<%= dates[i].date_machine%>">
+                        <%= dates[i].date%>
+                    </option>
+                    <% } }else{ %>
+                    <option value="-1" selected>Keine Daten</option>
+                    <% } %>
+                </select>
+                <canvas id="lineChart"></canvas>
+            </div>
+        </div>
+        <br>
+        <div class="card">
+            <div class="card-header">
+                Verkaufszahlen
+            </div>
+            <div class="card-body">
+                <div class="input-group">
+                    <div class="input-group-prepend">
+                        <span class="input-group-text" id="basic-addon1">Datum:</span>
+                    </div>
+                    <select class="custom-select" id="sold_date">
+                        <% if(dates.length){%>
+                        <option value="" selected>Choose ...</option>
+                        <% for(var i=0; i< dates.length; i++) {%>
+                        <option value="<%= dates[i].date_machine%>">
+                            <%= dates[i].date%>
+                        </option>
+                        <% } }else{ %>
+                        <option value="-1" selected>Keine Daten</option>
+                        <% } %>
+                    </select>
+                </div>
+                <div class="input-group">
+                    <div class="input-group-prepend">
+                        <span class="input-group-text" id="basic-addon1">Station:</span>
+                    </div>
+                    <select class="custom-select" id="sold_station" onchange="loadSellingData()">
+                    </select>
+                </div>
+            </div>
+            <br>
+            <div class="container">
+                <table class="table" style="min-height: 200px">
+                    <thead>
+                        <tr>
+                            <th scope="col">#</th>
+                            <th scope="col">Name</th>
+                            <th scope="col">Verkauft</th>
+                        </tr>
+                    </thead>
+                    <tbody id="sold_table">
+    
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <br>
+
+    </div>
+
+</body>
+
+<script>
+    var chart = null;
+
+    $(document).ready(function () {
+        loadCurrentLoad();
+        setInterval(function () {
+            loadCurrentLoad()
+        }, 60000)
+        loadStations();
+    });
+
+    function loadStations() {
+        $.ajax({
+            type: "GET",
+            url: "/data/getAllStations",
+            success: (data) => {
+                var s = "";
+                if (!data.stations.length) {
+                    s = '<option value=""> Keine Stationen gefunden </option>';
+                } else {
+                    s = '<option value=""> Choose ... </option>';
+                    data.stations.forEach((element) => {
+                        s += '<option value="' + element.id + '">' + element.name + '</option>';
+                    })
+                }
+                document.getElementById("sold_station").innerHTML=s;
+            }
+        });
+    }
+
+    function loadSellingData(){
+        var date = document.getElementById("sold_date").value;
+        var station = document.getElementById("sold_station").value;
+
+        if(date =="" || station==""){
+            return;
+        }
+
+        $.ajax({
+            type: "POST",
+            url: "/data/getSoldProducts",
+            data: {
+                date: date,
+                stationId: station
+            },
+            success: (data) => {
+                var s ="";
+                if(data.data.length==0){
+                    s='<tr> Keine Daten gefunden </tr>';
+                } else{
+                    for(var i=0; i<data.data.length; i++){
+                        s+='<tr><th scope="row">'+(i+1)+'</th>'
+                        s+="<td>"+data.data[i].name+"</td>";
+                        s+="<td>"+data.data[i].amount+"</td></tr>";
+                    }
+                }
+                document.getElementById("sold_table").innerHTML=s;
+            }
+        });
+    }
+
+    function clearAlert(alert_id) {
+        $.ajax({
+            type: "POST",
+            url: "/data/alert",
+            data: {
+                clearAlert: alert_id
+            }
+        });
+    }
+
+    function loadCurrentLoad() {
+        $.ajax({
+            url: "/data/getActiveOrdersCount",
+            success: (result) => {
+                document.getElementById("openOrders").innerHTML = result.data
+            }
+        });
+        $.ajax({
+            url: "/data/getActiveSessionsCount",
+            success: (result) => {
+                document.getElementById("activeSessions").innerHTML = result.data
+            }
+        });
+        $.ajax({
+            url: "/data/getTablesCount",
+            success: (result) => {
+                document.getElementById("allTables").innerHTML = result.data
+            }
+        });
+        $.ajax({
+            url: "/data/getOrdersTodayCount",
+            success: (result) => {
+                document.getElementById("todayOrders").innerHTML = result.data
+            }
+        });
+        $.ajax({
+            url: "/data/getSessionsTodayCount",
+            success: (result) => {
+                document.getElementById("todaySessions").innerHTML = result.data
+            }
+        });
+
+        // Load alerts
+        $.ajax({
+            url: "/data/alerts",
+            success: (result) => {
+                document.getElementById("alerts").innerHTML = "";
+                if (result.data.length > 0) {
+                    result.data.forEach((element) => {
+                        document.getElementById("alerts").innerHTML +=
+                            '<div class="alert alert-warning alert-dismissible fade show" role="alert">' +
+                            '<img src="/images/alert.png" style="width: 20px; "> ' + element
+                            .triggered + ' <strong>' + element.stationname +
+                            '</strong> <span class="float-right">' +
+                            element.name +
+                            '</span><form action="#" method="POST"><button type="button" onclick="clearAlert(' +
+                            element.id +
+                            ')" class="close" data-dismiss="alert" aria-label="Close">' +
+                            '<span aria-hidden="true">&times;</span></button></form></div>'
+                    });
+                } else {
+                    document.getElementById("alerts").innerHTML = "Keine Benachrichtigungen"
+                }
+
+
+            }
+        });
+    }
+
+    function loadChart() {
+        var d = document.getElementById("dates").value;
+        if (d == -1 || d == "") {
+            chart.destroy();
+            return;
+        }
+        // Request all stations
+        $.ajax({
+            url: "/data/getAllStations",
+            type: "GET",
+            dataType: 'json',
+            success: function (result) {
+                var pdatasets = [];
+                var globalcolors=[]; // Prevent the same color twice
+                for (var i = 0; i < result.stations.length; i++) {
+                    var color, loop=0; // Generate random color
+                    do{
+                        color = getRandColor();
+                        globalcolors.push(color);
+                        loop++;
+                    }while(!globalcolors.includes(color) && loop < 10);
+                    if(loop == 10){
+                        console.log("Max tries at color generation")
+                    }
+                    console.log(globalcolors +" "+color);
+                    // Load data for station
+                    var station = result.stations[i];
+                    $.ajax({
+                        url: "/data/getDailyLoadForStation",
+                        type: "POST",
+                        async: false,
+                        data: {
+                            date: d,
+                            stationid: station.id
+                        },
+                        dataType: 'json',
+                        success: function (result) {
+                            pdatasets.push({
+                                label: station.name,
+                                data: parseLoad(result.load),
+                                borderColor: [
+                                    color,
+                                ],
+                            })
+                        }
+                    });
+                }
+                // Make chart
+                if (chart != null) {
+                    chart.destroy();
+                }
+                var ctxL = document.getElementById("lineChart").getContext('2d');
+                chart = new Chart(ctxL, {
+                    type: 'line',
+                    data: {
+                        labels: Array.from({
+                            length: 24
+                        }, (x, i) => i),
+                        datasets: pdatasets
+                    },
+                    options: {
+                        responsive: true,
+                        scales: {
+                            yAxes: [{
+                                ticks: {
+                                    stepSize: 1
+                                }
+                            }]
+                        }
+                    }
+                });
+            }
+        });
+    }
+
+    function parseLoad(load) {
+        var t = [];
+        for (var i = 0; i < 24; i++) {
+            var found = false;
+            load.forEach(element => {
+                if (element.hour == i) {
+                    t.push(element.anzahl)
+                    found = true;
+                }
+            });
+            if (!found) {
+                t.push(0)
+            }
+        }
+        return t;
+    }
+
+    function getRandColor() {
+        var col=[0,0,0];
+        var ff = Math.floor(Math.random()*3);
+        var oo = Math.floor(Math.random()*3);
+        var color = Math.floor(Math.random() * 6)*51;
+        col[ff]=255;
+        if(ff==oo){
+            col[++oo%3]=0;
+            oo= ++oo%3;
+        }else{
+            col[oo]=0
+        }
+        var t = [0,1,2];
+        t.forEach((x)=>{
+            if(x!= oo && x!= ff){
+                col[x]=color;
+            }
+        });
+        var hex = "#";
+        col.forEach((x)=>{
+            if(x==0){
+                hex+="00";
+            }else{
+                hex += x.toString(16);
+            }
+           
+        })
+        if(hex.length != 7){
+            console.log(ff + " "+ oo + " "+ color);
+            console.log(col);
+        }
+        return hex;
+    }
+</script>
+
+</html>

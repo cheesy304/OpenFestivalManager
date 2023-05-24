@@ -64,6 +64,7 @@ let setCache = function (req, res, next) {
 app.use(setCache);
 // Use public directory as root for web files
 app.use(express_1.default.static(path_1.default.join(__dirname, 'public')));
+//app.use(express.static(path.join(__dirname, "node_modules/bootstrap/dist/")));
 // Session valid for 24h
 const oneDay = 1000 * 60 * 60 * 24;
 // Set session parameters
@@ -103,6 +104,6 @@ if (!data_source_1.ds.createADSFromFile()) {
 }
 // Start express server
 app.listen(port, () => {
-    console.log(`[server]: Server is running at https://localhost:${port}`);
+    console.log(`[server]: Server is running at http://localhost:${port}`);
     console.log("[server]: Version " + process.env.VERSION);
 });
